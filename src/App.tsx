@@ -1,14 +1,15 @@
-import React  from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Box } from '@mui/material';
+import { getImageURLs } from './images'
 
 const IMAGE_LIST = 100
 const CARROUSEL_LIST = 5
 const WINDOW_BUFFER = 3
 
-const ButtonActions = () => {
+const ButtonActions = ({ onNext }: { onNext: any }) => {
   return (
     <Box sx={{ display: 'flex', gap: 1 }}>
-      <Button variant="contained">Next</Button>
+      <Button onClick={onNext} variant="contained">Next</Button>
     </Box>
   )
 }
@@ -32,6 +33,45 @@ const Carrousel = ({ images }: { images?: HTMLImageElement[] }) => {
 }
 
 const App = () => {
+  const [imageURLs, setImageURLs] = useState<string[]>([])
+  const [fetchedUrls, setFetcedUrls] = useState<string[]>([])
+  const [images, setImages] = useState<HTMLImageElement[]>([])
+
+  useEffect(() => {
+    const urlsToFetch = imageURLs.slice(0, CARROUSEL_LIST)
+    const buildImages = urlsToFetch.map((picture) => {
+      const img = new Image();
+      img.src = picture;
+      return img
+    })
+    setImages(buildImages)
+    setFetcedUrls(prev => [...prev, ...urlsToFetch])
+  }, [imageURLs])
+
+  useEffect(() => {
+    const imagesUrl = getImageURLs(IMAGE_LIST)
+    setImageURLs(imagesUrl)
+  }, [])
+
+  const [imageIndex, setImageIndex] = useState(0)
+
+  const handleNextImage = () => {
+    setImageIndex(prev => ++prev)
+    addImages()
+  }
+
+  const addImages = () => {
+    const newImages: HTMLImageElement[] = []
+    imageURLs.slice(imageIndex + CARROUSEL_LIST, WINDOW_BUFFER + imageIndex + CARROUSEL_LIST).forEach((picture) => {
+      if (fetchedUrls.includes(picture)) return
+      const img = new Image();
+      setFetcedUrls(prev => [...prev, picture])
+      img.src = picture;
+      newImages.push(img)
+    })
+    setImages(prev => [...prev, ...newImages])
+  }
+
   return (
     <Box sx={{
       width: '100%',
@@ -41,9 +81,9 @@ const App = () => {
       flexDirection: 'column',
       alignItems: ' center'
     }}>
-      <MainImage  />
-      <Carrousel  />
-      <ButtonActions  />
+      <MainImage image={images[imageIndex]} />
+      <Carrousel images={images.slice(imageIndex, imageIndex + 5)} />
+      <ButtonActions onNext={handleNextImage} />
     </Box >
   );
 }
